@@ -24,15 +24,15 @@ public class Transaction {
 	}
 	
 	public boolean isDebit() {
-		return transactionType == transactionType.DEBIT;
+		return transactionType == TransactionType.DEBIT;
 	}
 	
 	public boolean isCredit() {
-		return transactionType == transactionType.CREDIT;
+		return transactionType == TransactionType.CREDIT;
 	}
 	
 	public boolean isReversal() {
-		return transactionType == transactionType.REVERSAL;
+		return transactionType == TransactionType.REVERSAL;
 	}
 
 	public String getTransactionId() {

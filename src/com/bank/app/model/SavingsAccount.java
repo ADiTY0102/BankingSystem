@@ -2,7 +2,7 @@ package com.bank.app.model;
 
 import com.bank.app.enums.AccountTypes;
 
-public abstract class SavingsAccount extends Account{
+public class SavingsAccount extends Account{
 	
 	private double interestRate;
 	

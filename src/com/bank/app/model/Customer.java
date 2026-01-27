@@ -55,20 +55,19 @@ public class Customer {
 		return new ArrayList<>(accounts);
 	}
 
-
 	
 	
 	//Getters
-	public void setCustomerId(String customerId) {
-		this.customerId = customerId;
-	}
+	public String getCustomerId() {
+        return customerId;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setPan(String pan) {
-		this.pan = pan;
-	}
+    public String getPan() {
+        return pan;
+    }
 
 }
