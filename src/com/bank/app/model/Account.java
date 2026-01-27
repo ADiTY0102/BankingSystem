@@ -1,6 +1,5 @@
 package com.bank.app.model;
 
-import java.io.ObjectInputFilter.Status;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
@@ -113,7 +112,7 @@ public abstract class Account {
 		return balance;
 	}
 
-	public AccountStatus getStuts() {
+	public AccountStatus getStatus() {
 		return status;
 	}
 	
