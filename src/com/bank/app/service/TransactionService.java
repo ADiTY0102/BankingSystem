@@ -77,13 +77,13 @@ public class TransactionService {
     }
 
     public boolean validateDailyLimit(Account account, double amount) {
-        double dailyLimit = 100000.0;
+        double dailyLimit = 10000.0;
 
         double todaysDebits = repository.getAllTransactions().stream()
                 .filter(Transaction::isDebit)
                 .mapToDouble(Transaction::getAmount)
                 .sum();
-
+        
         return todaysDebits + amount <= dailyLimit;
     }
 }

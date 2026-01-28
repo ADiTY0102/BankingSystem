@@ -1,13 +1,15 @@
 package com.bank.app;
 
 import com.bank.app.dto.CreateAccountRequest;
+import com.bank.app.dto.TransferRequest;
 import com.bank.app.enums.AccountTypes;
 import com.bank.app.model.Account;
 import com.bank.app.model.Customer;
-import com.bank.app.model.SavingsAccount;
+//import com.bank.app.model.SavingsAccount;
 import com.bank.app.repository.BankRepository;
 import com.bank.app.service.BankService;
-import com.bank.app.util.GenerateId;
+import com.bank.app.service.TransactionService;
+//import com.bank.app.util.GenerateId;
 
 public class MainApplication {
 
@@ -77,11 +79,12 @@ public class MainApplication {
         });
         */
     	
+    
     	//Service Module Testing 
     	
-    	BankRepository repository = new BankRepository();
-        BankService bankService = new BankService(repository);
-
+//    	BankRepository repository = new BankRepository();
+//        BankService bankService = new BankService(repository);
+ /*       
         // 1) Create customer from service
         Customer customer = bankService.createCustomer(
                 "Aditya Binjagermath",
@@ -108,5 +111,47 @@ public class MainApplication {
         // 4) Apply monthly processing (for savings, adds interest)
         bankService.applyMonthlyProcess();
         System.out.println("Balance after monthly processing: " + account.getBalance());
+        
+        
+  */
+        
+        // Module 5 Banking Services with transaction Service Testing
+    	BankRepository repository = new BankRepository();
+        TransactionService transactionService = new TransactionService(repository);
+        BankService bankService = new BankService(repository, transactionService);
+
+        Customer c1 = bankService.createCustomer("Mr. Aditya Virendra", "PAN1111");
+        Customer c2 = bankService.createCustomer("Miss. Arpita baraskar", "PAN2222");
+
+        CreateAccountRequest r1 = new CreateAccountRequest(
+                c1.getCustomerId(),
+                AccountTypes.SAVINGS,
+                50000.0,
+                10000.0,
+                0.04,
+                0.0
+        );
+        Account acc1 = bankService.createAccount(r1);
+
+        CreateAccountRequest r2 = new CreateAccountRequest(
+                c2.getCustomerId(),
+                AccountTypes.SAVINGS,
+                10000.0,
+                5000.0,
+                0.04,
+                0.0
+        );
+        Account acc2 = bankService.createAccount(r2);
+
+        TransferRequest tr = new TransferRequest(
+                acc1.getAccountNumber(),
+                acc2.getAccountNumber(),
+                5000.0
+        );
+        bankService.transferFunds(tr);
+
+        System.out.println("Aditya's bank balance after transfer: " + acc1.getBalance());
+        System.out.println("Arpita's bank balance after transfer: " + acc2.getBalance());
+        
     }
 }

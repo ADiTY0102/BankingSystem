@@ -5,9 +5,11 @@ import java.util.Optional;
 
 import com.bank.app.dto.AccountStatusChangeRequest;
 import com.bank.app.dto.CreateAccountRequest;
+import com.bank.app.dto.TransactionRequest;
 import com.bank.app.dto.TransferRequest;
 import com.bank.app.enums.AccountStatus;
 import com.bank.app.enums.AccountTypes;
+import com.bank.app.enums.TransactionType;
 import com.bank.app.model.Account;
 import com.bank.app.model.CurrentAccount;
 import com.bank.app.model.Customer;
@@ -17,11 +19,13 @@ import com.bank.app.util.GenerateId;
 
 public class BankService {
 
-	private final BankRepository repository;
+	   private final BankRepository repository;
+	    private final TransactionService transactionService;
 
-	public BankService(BankRepository repository) {
-		this.repository = repository;
-	}
+	    public BankService(BankRepository repository, TransactionService transactionService) {
+	        this.repository = repository;
+	        this.transactionService = transactionService;
+	    }
 
 	//  <I> Creating Customers
 	public Customer createCustomer(String name, String pan) {
@@ -31,8 +35,8 @@ public class BankService {
 		return customer;
 	}
 
-	
-	
+
+
 	//  <II> Create Account => CreateAccountRequest
 	public Account createAccount(CreateAccountRequest request) {
 
@@ -59,9 +63,9 @@ public class BankService {
 			throw new IllegalArgumentException("Unsupported Account Type: "+ request.getAccountType());
 		}
 
-		
-		
-		
+
+
+
 		//initial deposit agar hai tho!
 
 		if(request.getInitialDiposit() > 0 ) {
@@ -96,48 +100,58 @@ public class BankService {
 		}
 		repository.saveAccount(account);
 	}
-
+	
+	
 	
 	
 	
 	//  (IV) Transfer Funds..!!
 
 	public void transferFunds(TransferRequest request) {
-
 		Account from = repository.findAccountsByNumber(request.getFromAccountNumber())
-				.orElseThrow(()->
-				new IllegalArgumentException("Senders Account Not Found!!" + request.getFromAccountNumber())
+				.orElseThrow(() -> new IllegalArgumentException(
+						"From account not found: " + request.getFromAccountNumber())
 						);
 
 		Account to = repository.findAccountsByNumber(request.getToAccountNumber())
-				.orElseThrow(()->
-				new IllegalArgumentException("Receivers Bank Account Not Found!!" + request.getToAccountNumber())
+				.orElseThrow(() -> new IllegalArgumentException(
+						"To account not found: " + request.getToAccountNumber())
 						);
 
 		double amount = request.getAmount();
 
-		if(!from.canDebit(amount)) {
-			System.out.println("Transfer FAILED: Insufficient Funds");
+		if (!from.canDebit(amount)) {
+			System.out.println("Transfer failed: insufficient funds.");
 			return;
 		}
 
-		from.debit(amount);
-		to.credit(amount);
+		TransactionRequest debitReq = new TransactionRequest(
+				from.getAccountNumber(),
+				TransactionType.DEBIT,
+				amount
+				);
 
-		repository.saveAccount(from);
-		repository.saveAccount(to);
-	}	
-	
-	
+		TransactionRequest creditReq = new TransactionRequest(
+				to.getAccountNumber(),
+				TransactionType.CREDIT,
+				amount
+				);
+
+		transactionService.processTransaction(debitReq, from);
+		transactionService.processTransaction(creditReq, to);
+	}
+
+
+
 	//  (V) Applying Monthly Rules and Policies!!
-	
-	
+
 	public void applyMonthlyProcess() {
 		for(Account account : repository.getAllAccounts()) {
 			account.applyMonthlyRules();
 			repository.saveAccount(account);
+		}
 	}
-}
+
 
 
 

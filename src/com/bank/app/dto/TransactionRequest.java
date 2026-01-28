@@ -1,6 +1,5 @@
 package com.bank.app.dto;
 
-import com.bank.app.enums.AccountTypes;
 import com.bank.app.enums.TransactionType;
 
 public class TransactionRequest {
