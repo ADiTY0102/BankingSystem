@@ -2,7 +2,7 @@ package com.bank.app.model;
 
 import com.bank.app.enums.AccountTypes;
 
-public abstract class CurrentAccount extends Account{
+public class CurrentAccount extends Account{
 	private double overDraftLimit;
 	
 	public CurrentAccount(
