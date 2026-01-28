@@ -3,6 +3,7 @@ package com.bank.app;
 import com.bank.app.model.Customer;
 import com.bank.app.model.SavingsAccount;
 import com.bank.app.repository.BankRepository;
+import com.bank.app.util.GenerateId;
 
 public class MainApplication {
 
@@ -34,9 +35,23 @@ public class MainApplication {
 
         BankRepository repository = new BankRepository();
 
-        Customer customer = new Customer("AB22", "arpita baraskar", "ABCDE1234F");
-        SavingsAccount savings = new SavingsAccount("AB02", 2000.0, 0.04);
+//        Customer customer = new Customer("AB22", "arpita baraskar", "ABCDE1234F");
+//        SavingsAccount savings = new SavingsAccount("AB02", 2000.0, 0.04);
 
+        
+        Customer customer = new Customer(
+                GenerateId.generateCustomerId(),
+                "Aditya Binjagermath",
+                "ABCDE1234F"
+        );
+
+        SavingsAccount savings = new SavingsAccount(
+        		GenerateId.generateAccountId(),
+                10000.0,
+                0.04
+        );
+        
+        
         customer.addAccount(savings);
 
         repository.saveCustomer(customer);
@@ -47,12 +62,12 @@ public class MainApplication {
 
         repository.saveAccount(savings); // update stored account
 
-        repository.findCustomersById("AB22").ifPresent(c -> {
-            System.out.println("Customer from repository: " + c.getName());
-            System.out.println("Net worth from repository: " + c.calculateNetWorth());
+        repository.findCustomersById(customer.getCustomerId()).ifPresent(c -> {
+            System.out.println("Customer from repository: " + customer.getName());
+            System.out.println("Net worth from repository: " + customer.calculateNetWorth());
         });
 
-        repository.findAccountsByNumber("AB02").ifPresent(a -> {
+        repository.findAccountsByNumber(savings.getAccountNumber()).ifPresent(a -> {
             System.out.println("Account from repository balance: " + a.getBalance());
         });
     }
