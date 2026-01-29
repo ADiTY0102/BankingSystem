@@ -21,7 +21,7 @@ public class TransactionService {
         TransactionType type = request.getTransactionType();
 
         if (amount <= 0) {
-            Transaction tx = Transaction.failure(type, amount, "Amount must be > 0");
+            Transaction tx = Transaction.failure(type, amount, "Amount must be Greater than 0");
             repository.saveTransaction(tx);
             return tx;
         }
