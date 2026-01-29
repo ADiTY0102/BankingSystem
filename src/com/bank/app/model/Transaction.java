@@ -38,6 +38,7 @@ public class Transaction {
         );
     }
 
+	
     public static Transaction failure(TransactionType type, double amount, String reason) {
         return new Transaction(
         		GenerateId.generateTransactionId(),
