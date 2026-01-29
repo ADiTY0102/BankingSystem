@@ -152,7 +152,11 @@ public class BankService {
 		}
 	}
 
-
+	// Accessing Repository from Bank Service
+	
+	public BankRepository getRepository() {
+	    return repository;
+	}
 
 
 }
