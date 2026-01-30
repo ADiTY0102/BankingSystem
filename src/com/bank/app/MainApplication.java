@@ -2,21 +2,28 @@ package com.bank.app;
 
 import java.util.Scanner;
 
-import com.bank.app.repository.BankRepository;
+import com.bank.app.repository.AccountDao;
+import com.bank.app.repository.AccountJdbcDao;
+//import com.bank.app.repository.BankRepository;
+import com.bank.app.repository.CustomerDao;
+import com.bank.app.repository.CustomerJdbcDao;
 import com.bank.app.service.BankService;
 import com.bank.app.service.ReportingService;
 import com.bank.app.service.TransactionService;
+import com.bank.app.repository.TransactionJdbcDao;
+import com.bank.app.repository.TransactionDao;
 
 public class MainApplication {
 
     public static void main(String[] args) {
     	
-        BankRepository repository = new BankRepository();
-        TransactionService transactionService = new TransactionService(repository);
-        BankService bankService = new BankService(repository, transactionService);
-        ReportingService reportingService = new ReportingService(repository);
+        CustomerDao customerDao = new CustomerJdbcDao();
+        AccountDao accountDao = new AccountJdbcDao();
+        TransactionDao transactionDao = new TransactionJdbcDao();
 
-        Scanner scanner = new Scanner(System.in);
+        TransactionService transactionService = new TransactionService(transactionDao, accountDao);
+        BankService bankService = new BankService(customerDao, accountDao, transactionDao, transactionService);
+        ReportingService reportingService = new ReportingService(accountDao, customerDao, transactionDao);        Scanner scanner = new Scanner(System.in);
 
         boolean running = true;
         while (running) {

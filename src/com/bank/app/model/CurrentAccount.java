@@ -1,5 +1,6 @@
 package com.bank.app.model;
 
+import com.bank.app.enums.AccountStatus;
 import com.bank.app.enums.AccountTypes;
 
 public class CurrentAccount extends Account{
@@ -8,7 +9,7 @@ public class CurrentAccount extends Account{
 	public CurrentAccount(
 			String accountNumber,
 			double minimumBalance,
-			double overDraftLimit
+			double overDraftLimit 
 			) {
 		super(accountNumber,AccountTypes.CURRENT,minimumBalance);
 		this.overDraftLimit = overDraftLimit;
@@ -33,5 +34,10 @@ public class CurrentAccount extends Account{
 	}
 	 public double getOverDraftLimit() {
 		 return overDraftLimit;
+	 }
+
+
+	 public AccountStatus setStatus(AccountStatus status) {
+		 return status;
 	 }
 }

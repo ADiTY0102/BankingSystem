@@ -1,14 +1,14 @@
 package com.bank.app.repository;
 
-import java.util.*;
-
-import com.bank.app.model.Account;
-import com.bank.app.model.Customer;
-import com.bank.app.model.Transaction;
+//import java.util.*;
+//
+//import com.bank.app.model.Account;
+//import com.bank.app.model.Customer;
+//import com.bank.app.model.Transaction;
 
 
 public interface BankRepository {
-	
+	/*
 	//Customer
 	void saveCustomer(Customer customer);
 	Optional<Customer> getCustomersById(String customerId);
@@ -23,6 +23,8 @@ public interface BankRepository {
 	void saveTransaction(Transaction transaction);
 	List<Transaction> getTransactionsByAccount(String accountNumber);
 	List<Transaction> getAllTransactions();
+	
+	*/
 }
 
 /*

@@ -1,6 +1,6 @@
 package com.bank.app.service;
 
-
+import java.util.List;
 import java.util.Optional;
 
 import com.bank.app.dto.AccountStatusChangeRequest;
@@ -14,149 +14,152 @@ import com.bank.app.model.Account;
 import com.bank.app.model.CurrentAccount;
 import com.bank.app.model.Customer;
 import com.bank.app.model.SavingsAccount;
-import com.bank.app.repository.BankRepository;
+import com.bank.app.repository.AccountDao;
+import com.bank.app.repository.CustomerDao;
+import com.bank.app.repository.TransactionDao;
 import com.bank.app.util.GenerateId;
 
 public class BankService {
 
-	   private final BankRepository repository;
-	    private final TransactionService transactionService;
+    private final CustomerDao customerDao;
+    private final AccountDao accountDao;
+//    private final TransactionDao transactionDao;
+    private final TransactionService transactionService;
 
-	    public BankService(BankRepository repository, TransactionService transactionService) {
-	        this.repository = repository;
-	        this.transactionService = transactionService;
-	    }
+    public BankService(CustomerDao customerDao,
+                       AccountDao accountDao,
+                       TransactionDao transactionDao,
+                       TransactionService transactionService) {
+        this.customerDao = customerDao;
+        this.accountDao = accountDao;
+//        this.transactionDao = transactionDao;
+        this.transactionService = transactionService;
+    }
 
-	//  <I> Creating Customers
-	public Customer createCustomer(String name, String pan) {
-		String customerId = GenerateId.generateCustomerId();
-		Customer customer = new Customer(customerId, name, pan);
-		repository.saveCustomer(customer);
-		return customer;
-	}
+    // <I> Creating Customers
+    public Customer createCustomer(String name, String pan) {
+        String customerId = GenerateId.generateCustomerId();
+        Customer customer = new Customer(customerId, name, pan);
 
+        // persist customer
+        customerDao.save(customer);
 
+        return customer;
+    }
 
-	//  <II> Create Account => CreateAccountRequest
-	public Account createAccount(CreateAccountRequest request) {
+    // <II> Create Account => CreateAccountRequest
+    public Account createAccount(CreateAccountRequest request) {
 
-		Optional<Customer> optionalCustomer = repository.findCustomersById(request.getCustomerId());
-		if(optionalCustomer.isEmpty()) {
-			throw new IllegalArgumentException("Customer Not Found" + request.getCustomerId());
-		}
+        Optional<Customer> optionalCustomer = customerDao.findById(request.getCustomerId());
+        if (optionalCustomer.isEmpty()) {
+            throw new IllegalArgumentException("Customer Not Found " + request.getCustomerId());
+        }
 
-		Customer customer = optionalCustomer.get();
+        Customer customer = optionalCustomer.get();
 
-		String accountNumber = GenerateId.generateAccountId();
-		Account account;
+        String accountNumber = GenerateId.generateAccountId();
+        Account account;
 
-		if(request.getAccountType() == AccountTypes.SAVINGS) {
-			account = new SavingsAccount(accountNumber, 
-					request.getMinimumBalance(), 
-					request.getInterestRate()); 
-		}else if(request.getAccountType() == AccountTypes.CURRENT){
-			account = new CurrentAccount( accountNumber,
-					request.getMinimumBalance(),
-					request.getOverdraftLimit()
-					);	
-		}else {
-			throw new IllegalArgumentException("Unsupported Account Type: "+ request.getAccountType());
-		}
+        if (request.getAccountType() == AccountTypes.SAVINGS) {
+            account = new SavingsAccount(
+                    accountNumber,
+                    request.getMinimumBalance(),
+                    request.getInterestRate(), null
+            );
+        } else if (request.getAccountType() == AccountTypes.CURRENT) {
+            account = new CurrentAccount(
+                    accountNumber,
+                    request.getMinimumBalance(),
+                    request.getOverdraftLimit()
+            );
+        } else {
+            throw new IllegalArgumentException("Unsupported Account Type: " + request.getAccountType());
+        }
 
+        // initial deposit if any
+        if (request.getInitialDiposit() > 0) {
+            account.credit(request.getInitialDiposit());
+        }
 
+        // attach to customer object in memory (optional, depending on your design)
+        customer.addAccount(account);
 
+        // persist account & update customer if needed
+        accountDao.save(account, customer.getCustomerId());
+        customerDao.update(customer);
 
-		//initial deposit agar hai tho!
+        return account;
+    }
 
-		if(request.getInitialDiposit() > 0 ) {
-			account.credit(request.getInitialDiposit());
-		}
+    // (III) Changing Account Status..!!
+    public void changeAccountStatus(AccountStatusChangeRequest request) {
 
-		//Saving Everything...!!
-		customer.addAccount(account);
-		repository.saveAccount(account);
-		repository.saveCustomer(customer);
+        Account account = accountDao.findByAccountNumber(request.getAccountNumber())
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Account Not Found: " + request.getAccountNumber())
+                );
 
+        AccountStatus newStatus = request.getAccountStatus();
+        switch (newStatus) {
+            case ACTIVE -> account.unFreezeAccount();
+            case FROZEN -> account.freezeAccount();
+            case CLOSED -> account.freezeAccount();
+        }
 
-		return account;
+        accountDao.update(account);
+    }
 
-	}
+    // (IV) Transfer Funds..!!
+    public void transferFunds(TransferRequest request) {
 
+        Account from = accountDao.findByAccountNumber(request.getFromAccountNumber())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "From account not found: " + request.getFromAccountNumber())
+                );
 
+        Account to = accountDao.findByAccountNumber(request.getToAccountNumber())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "To account not found: " + request.getToAccountNumber())
+                );
 
-	//  (III) Changing Account Status..!!
+        double amount = request.getAmount();
 
-	public void changeAccountStatus(AccountStatusChangeRequest request) {
-		Account account = repository.findAccountsByNumber(request.getAccountNumber())
-				.orElseThrow(()-> 
-				new IllegalArgumentException("Account Not Found: "+request.getAccountNumber())
-						);
+        if (!from.canDebit(amount)) {
+            System.out.println("Transfer failed: insufficient funds.");
+            return;
+        }
 
-		AccountStatus newStatus = request.getAccountStatus();
-		switch (newStatus) {
-		case ACTIVE -> account.unFreezeAccount();
-		case FROZEN -> account.freezeAccount();
-		case CLOSED -> account.freezeAccount();
-		}
-		repository.saveAccount(account);
-	}
-	
-	
-	
-	
-	
-	//  (IV) Transfer Funds..!!
+        TransactionRequest debitReq = new TransactionRequest(
+                from.getAccountNumber(),
+                TransactionType.DEBIT,
+                amount
+        );
 
-	public void transferFunds(TransferRequest request) {
-		Account from = repository.findAccountsByNumber(request.getFromAccountNumber())
-				.orElseThrow(() -> new IllegalArgumentException(
-						"From account not found: " + request.getFromAccountNumber())
-						);
+        TransactionRequest creditReq = new TransactionRequest(
+                to.getAccountNumber(),
+                TransactionType.CREDIT,
+                amount
+        );
 
-		Account to = repository.findAccountsByNumber(request.getToAccountNumber())
-				.orElseThrow(() -> new IllegalArgumentException(
-						"To account not found: " + request.getToAccountNumber())
-						);
+        transactionService.processTransaction(debitReq, from);
+        transactionService.processTransaction(creditReq, to);
 
-		double amount = request.getAmount();
+        // persist updated accounts after transfer
+        accountDao.update(from);
+        accountDao.update(to);
+    }
 
-		if (!from.canDebit(amount)) {
-			System.out.println("Transfer failed: insufficient funds.");
-			return;
-		}
+    // (V) Applying Monthly Rules and Policies!!
+    public void applyMonthlyProcess() {
+        List<Account> accounts = accountDao.findAll(); // new DAO method
+        for (Account account : accounts) {
+            account.applyMonthlyRules();
+            accountDao.update(account);
+        }
+    }
 
-		TransactionRequest debitReq = new TransactionRequest(
-				from.getAccountNumber(),
-				TransactionType.DEBIT,
-				amount
-				);
-
-		TransactionRequest creditReq = new TransactionRequest(
-				to.getAccountNumber(),
-				TransactionType.CREDIT,
-				amount
-				);
-
-		transactionService.processTransaction(debitReq, from);
-		transactionService.processTransaction(creditReq, to);
-	}
-
-
-
-	//  (V) Applying Monthly Rules and Policies!!
-
-	public void applyMonthlyProcess() {
-		for(Account account : repository.getAllAccounts()) {
-			account.applyMonthlyRules();
-			repository.saveAccount(account);
-		}
-	}
-
-	// Accessing Repository from Bank Service
-	
-	public BankRepository getRepository() {
-	    return repository;
-	}
-
+    public Optional<Account> findAccountByNumber(String accountNumber) {
+        return accountDao.findByAccountNumber(accountNumber);
+    }
 
 }

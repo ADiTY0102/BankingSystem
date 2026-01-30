@@ -98,6 +98,10 @@ public abstract class Account {
 		return status;
 	}
 	
+	public double getMinBalance() {
+		return minimumBalance;
+	}
+	
 }
 
 

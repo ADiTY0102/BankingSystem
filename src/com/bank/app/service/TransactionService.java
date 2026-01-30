@@ -6,14 +6,17 @@ import com.bank.app.dto.TransactionRequest;
 import com.bank.app.enums.TransactionType;
 import com.bank.app.model.Account;
 import com.bank.app.model.Transaction;
-import com.bank.app.repository.BankRepository;
+import com.bank.app.repository.AccountDao;
+import com.bank.app.repository.TransactionDao;
 
 public class TransactionService {
 
-    private final BankRepository repository;
+    private final TransactionDao transactionDao;
+    private final AccountDao accountDao;
 
-    public TransactionService(BankRepository repository) {
-        this.repository = repository;
+    public TransactionService(TransactionDao transactionDao, AccountDao accountDao) {
+        this.transactionDao = transactionDao;
+        this.accountDao = accountDao;
     }
 
     public Transaction processTransaction(TransactionRequest request, Account account) {
@@ -22,7 +25,7 @@ public class TransactionService {
 
         if (amount <= 0) {
             Transaction tx = Transaction.failure(type, amount, "Amount must be Greater than 0");
-            repository.saveTransaction(tx);
+            transactionDao.save(tx, account.getAccountNumber());
             return tx;
         }
 
@@ -31,7 +34,7 @@ public class TransactionService {
         } else if (type == TransactionType.DEBIT) {
             if (!validateDailyLimit(account, amount)) {
                 Transaction tx = Transaction.failure(type, amount, "Daily limit exceeded");
-                repository.saveTransaction(tx);
+                transactionDao.save(tx, account.getAccountNumber());
                 return tx;
             }
             account.debit(amount);
@@ -41,18 +44,16 @@ public class TransactionService {
         Transaction tx = lastTx.isEmpty() ? null : lastTx.get(0);
 
         if (tx != null) {
-            repository.saveTransaction(tx);
+            transactionDao.save(tx, account.getAccountNumber());
         }
 
-        repository.saveAccount(account);
+        accountDao.update(account);
 
         return tx;
     }
 
     public void reverseTransaction(String transactionId, Account account) {
-        Transaction original = repository.getAllTransactions().stream()
-                .filter(t -> t.getTransactionId().equals(transactionId))
-                .findFirst()
+        Transaction original = transactionDao.findById(transactionId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + transactionId));
 
         double amount = original.getAmount();
@@ -72,18 +73,19 @@ public class TransactionService {
             throw new IllegalArgumentException("Only credit/debit can be reversed");
         }
 
-        repository.saveTransaction(reversal);
-        repository.saveAccount(account);
+        transactionDao.save(reversal, account.getAccountNumber());
+        accountDao.update(account);
     }
 
     public boolean validateDailyLimit(Account account, double amount) {
-        double dailyLimit = 10000.0;
+        double dailyLimit = 100000.0;
 
-        double todaysDebits = repository.getAllTransactions().stream()
+        List<Transaction> allTx = transactionDao.findByAccount(account.getAccountNumber());
+        double todaysDebits = allTx.stream()
                 .filter(Transaction::isDebit)
                 .mapToDouble(Transaction::getAmount)
                 .sum();
-        
+
         return todaysDebits + amount <= dailyLimit;
     }
 }
