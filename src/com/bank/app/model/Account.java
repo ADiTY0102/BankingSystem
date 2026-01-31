@@ -101,7 +101,6 @@ public abstract class Account {
 	public double getMinBalance() {
 		return minimumBalance;
 	}
-	
 }
 
 

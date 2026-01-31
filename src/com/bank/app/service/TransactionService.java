@@ -1,5 +1,6 @@
 package com.bank.app.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.bank.app.dto.TransactionRequest;
@@ -23,31 +24,29 @@ public class TransactionService {
         double amount = request.getAmount();
         TransactionType type = request.getTransactionType();
 
+        Transaction tx;
+
         if (amount <= 0) {
-            Transaction tx = Transaction.failure(type, amount, "Amount must be Greater than 0");
+            tx = Transaction.failure(type, amount, "Amount must be greater than 0");
             transactionDao.save(tx, account.getAccountNumber());
             return tx;
         }
 
-        if (type == TransactionType.CREDIT) {
-            account.credit(amount);
-        } else if (type == TransactionType.DEBIT) {
-            if (!validateDailyLimit(account, amount)) {
-                Transaction tx = Transaction.failure(type, amount, "Daily limit exceeded");
+        if (type == TransactionType.DEBIT) {
+            if (!account.canDebit(amount)) {
+                tx = Transaction.failure(type, amount, "Insufficient balance");
                 transactionDao.save(tx, account.getAccountNumber());
                 return tx;
             }
             account.debit(amount);
-        }
-
-        List<Transaction> lastTx = account.getLastNTransactions(1);
-        Transaction tx = lastTx.isEmpty() ? null : lastTx.get(0);
-
-        if (tx != null) {
-            transactionDao.save(tx, account.getAccountNumber());
+            tx = Transaction.success(type, amount);
+        } else {
+            account.credit(amount);
+            tx = Transaction.success(type, amount);
         }
 
         accountDao.update(account);
+        transactionDao.save(tx, account.getAccountNumber());
 
         return tx;
     }
@@ -79,10 +78,13 @@ public class TransactionService {
 
     public boolean validateDailyLimit(Account account, double amount) {
         double dailyLimit = 100000.0;
+        LocalDate today = java.time.LocalDate.now();
 
         List<Transaction> allTx = transactionDao.findByAccount(account.getAccountNumber());
+
         double todaysDebits = allTx.stream()
                 .filter(Transaction::isDebit)
+                .filter(tx -> tx.getTimestamp().toLocalDate().isEqual(today))
                 .mapToDouble(Transaction::getAmount)
                 .sum();
 

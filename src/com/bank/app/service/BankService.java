@@ -17,6 +17,7 @@ import com.bank.app.model.SavingsAccount;
 import com.bank.app.repository.AccountDao;
 import com.bank.app.repository.CustomerDao;
 import com.bank.app.repository.TransactionDao;
+import com.bank.app.security.SessionContext;
 import com.bank.app.util.GenerateId;
 
 public class BankService {
@@ -93,7 +94,7 @@ public class BankService {
 
     // (III) Changing Account Status..!!
     public void changeAccountStatus(AccountStatusChangeRequest request) {
-
+    	SessionContext.requireAdmin();
         Account account = accountDao.findByAccountNumber(request.getAccountNumber())
                 .orElseThrow(() ->
                         new IllegalArgumentException("Account Not Found: " + request.getAccountNumber())
@@ -151,6 +152,7 @@ public class BankService {
 
     // (V) Applying Monthly Rules and Policies!!
     public void applyMonthlyProcess() {
+    	SessionContext.requireAdmin();
         List<Account> accounts = accountDao.findAll(); // new DAO method
         for (Account account : accounts) {
             account.applyMonthlyRules();

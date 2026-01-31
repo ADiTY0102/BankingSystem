@@ -10,6 +10,7 @@ import com.bank.app.model.Transaction;
 import com.bank.app.repository.AccountDao;
 import com.bank.app.repository.CustomerDao;
 import com.bank.app.repository.TransactionDao;
+import com.bank.app.security.SessionContext;
 
 public class ReportingService {
 
@@ -27,6 +28,7 @@ public class ReportingService {
 
     // Reporting Top Accounts by Balance
     public List<Account> getTopAccountsByBalance(int count) {
+    	SessionContext.requireAdmin();
         // if AccountDao has a findTopByBalance, use it directly
         List<Account> all = accountDao.findAll();
         return all.stream()
@@ -37,6 +39,7 @@ public class ReportingService {
 
     // Reporting Failed Transactions 
     public List<Transaction> getFailedTransactions() {
+    	SessionContext.requireAdmin();
         // if TransactionDao has findFailedTransactions, you can just call that
         List<Transaction> all = transactionDao.findAll(); // or transactionDao.findFailedTransactions()
         return all.stream()
@@ -53,15 +56,23 @@ public class ReportingService {
 
     // Reporting Customer via net worth
     public Map<Customer, Double> generateCustomerNetWorthReport() {
+    	SessionContext.requireAdmin();
+        Map<Customer, Double> report = new LinkedHashMap<>();
+
         List<Customer> customers = customerDao.findAll();
 
-        // optionally, load accounts for each customer using AccountDao if needed for calculateNetWorth
-        // assuming Customer.calculateNetWorth() uses internal list of accounts already loaded
+        for (Customer customer : customers) {
 
-        return customers.stream()
-                .collect(Collectors.toMap(
-                        customer -> customer,
-                        Customer::calculateNetWorth
-                ));
+            double netWorth = accountDao
+                    .findByCustomerId(customer.getCustomerId())
+                    .stream()
+                    .mapToDouble(Account::getBalance)
+                    .sum();
+
+            report.put(customer, netWorth);
+        }
+
+        return report;
     }
+
 }

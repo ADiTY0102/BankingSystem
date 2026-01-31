@@ -30,3 +30,7 @@ CREATE TABLE transactions (
     FOREIGN KEY (account_number) REFERENCES accounts(account_number)
 );
 SELECT * FROM customers;
+
+SELECT * FROM accounts;
+
+SELECT * FROM transactions;

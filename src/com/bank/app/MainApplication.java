@@ -1,10 +1,11 @@
 package com.bank.app;
 
 import java.util.Scanner;
-
+import com.bank.app.util.ConsoleUI;
+import com.bank.app.enums.Role;
+import com.bank.app.security.SessionContext;
 import com.bank.app.repository.AccountDao;
 import com.bank.app.repository.AccountJdbcDao;
-//import com.bank.app.repository.BankRepository;
 import com.bank.app.repository.CustomerDao;
 import com.bank.app.repository.CustomerJdbcDao;
 import com.bank.app.service.BankService;
@@ -23,52 +24,40 @@ public class MainApplication {
 
         TransactionService transactionService = new TransactionService(transactionDao, accountDao);
         BankService bankService = new BankService(customerDao, accountDao, transactionDao, transactionService);
-        ReportingService reportingService = new ReportingService(accountDao, customerDao, transactionDao);        Scanner scanner = new Scanner(System.in);
+        ReportingService reportingService = new ReportingService(accountDao, customerDao, transactionDao);       
+        Scanner scanner = new Scanner(System.in);
+
+        
 
         boolean running = true;
         while (running) {
-        	System.out.println("╔══════════════════════════════════════╗");
-            System.out.println("║          Banking System              ║");
-            System.out.println("╚══════════════════════════════════════╝");
-            System.out.println("1. Create customer");
-            System.out.println("2. Create account");
-            System.out.println("3. Credit account");
-            System.out.println("4. Debit account");
-            System.out.println("5. Transfer funds");
-            System.out.println("6. Show customer net worth report");
-            System.out.println("7. Show top accounts by balance");
-            System.out.println("8. Show failed transactions");
-            System.out.println("9. Apply monthly processing");
+
+            ConsoleUI.printHeader("Banking System");
+            System.out.println("1. Login as Admin");
+            System.out.println("2. Login as Customer");
             System.out.println("0. Exit");
-            System.out.println("===================================");
+            ConsoleUI.printSeparator();
             System.out.print("Choose option: ");
 
             int choice = Integer.parseInt(scanner.nextLine());
-            
-            System.out.println("===================================");
-            try {
-                switch (choice) {
-                    case 1 -> MenuActions.createCustomer(scanner, bankService);
-                    case 2 -> MenuActions.createAccount(scanner, bankService);
-                    case 3 -> MenuActions.creditAccount(scanner, bankService, transactionService);
-                    case 4 -> MenuActions.debitAccount(scanner, bankService, transactionService);
-                    case 5 -> MenuActions.transferFunds(scanner, bankService);
-                    case 6 -> MenuActions.showCustomerNetWorth(reportingService);
-                    case 7 -> MenuActions.showTopAccounts(scanner, reportingService);
-                    case 8 -> MenuActions.showFailedTransactions(reportingService);
-                    case 9 -> bankService.applyMonthlyProcess();
-                    case 0 -> running = false;
-                    default -> System.out.println("Invalid option.");
+            ConsoleUI.printSeparator();
+
+            switch (choice) {
+                case 1 -> {
+                    SessionContext.loginAs(Role.ADMIN);
+                    AdminMenu.show(scanner, bankService, reportingService);
                 }
-            } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
+                case 2 -> {
+                    SessionContext.loginAs(Role.CUSTOMER);
+                    CustomerMenu.show(scanner, bankService, transactionService);
+                }
+                case 0 -> running = false;
+                default -> System.out.println("Invalid option.");
             }
         }
 
         scanner.close();
-        
-        System.out.println("Exiting application.");
-    }
+        System.out.println("Exiting application.");    }
 }
 
 

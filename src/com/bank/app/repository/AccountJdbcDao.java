@@ -1,6 +1,6 @@
 package com.bank.app.repository;
 
-//import com.bank.app.enums.AccountTypes;
+import com.bank.app.enums.AccountTypes;
 import com.bank.app.enums.AccountStatus;
 import com.bank.app.enums.AccountTypes;
 import com.bank.app.model.Account;
@@ -18,9 +18,12 @@ public class AccountJdbcDao implements AccountDao {
 
     @Override
     public void save(Account account, String customerId) {
-        String sql = "INSERT INTO accounts (account_number, customer_id, account_type, status, " +
-                     "balance, minimum_balance, interest_rate, overdraft_limit) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = """
+        			INSERT INTO accounts
+        			(account_number, customer_id, account_type, status, balance, minimum_balance, interest_rate, overdraft_limit)
+        			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        		
+        		""";
         try (Connection con = DBUtil.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
@@ -104,13 +107,17 @@ public class AccountJdbcDao implements AccountDao {
 
     @Override
     public void update(Account account) {
-        String sql = "UPDATE accounts SET status = ?, balance = ? WHERE account_number = ?";
+    	String sql = """
+    			UPDATE accounts
+    			SET status = ?, balance = ?
+    			WHERE account_number = ?
+    			""";
         try (Connection con = DBUtil.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setString(1, account.getStatus().name());
-            ps.setDouble(2, account.getBalance());
-            ps.setString(3, account.getAccountNumber());
+        	ps.setString(1, account.getStatus().name());
+        	ps.setDouble(2, account.getBalance());
+        	ps.setString(3, account.getAccountNumber());
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Error updating account", e);
@@ -118,24 +125,50 @@ public class AccountJdbcDao implements AccountDao {
     }
 
     private Account mapRowToAccount(ResultSet rs) throws SQLException {
+
         String accNum = rs.getString("account_number");
         AccountTypes type = AccountTypes.valueOf(rs.getString("account_type"));
         AccountStatus status = AccountStatus.valueOf(rs.getString("status"));
+
         double balance = rs.getDouble("balance");
-        double minBal = rs.getDouble("minimum_balance");
+        double minBal  = rs.getDouble("minimum_balance");
+
+        Account account;
 
         if (type == AccountTypes.SAVINGS) {
+
             double rate = rs.getDouble("interest_rate");
-            SavingsAccount sa = new SavingsAccount(accNum, minBal,rate ,status);
-            sa.setStatus(status);
-            return sa;
+
+            SavingsAccount sa = new SavingsAccount(
+                    accNum,
+                    minBal,
+                    rate,
+                    status
+            );
+
+            sa.credit(balance);   
+            account = sa;
+
         } else {
+
             double limit = rs.getDouble("overdraft_limit");
-            CurrentAccount ca = new CurrentAccount(accNum, balance,limit);
-            ca.setStatus(status);
-            return ca;
+            CurrentAccount ca = new CurrentAccount(
+                    accNum,
+                    minBal,
+                    limit
+            );
+
+            ca.credit(balance);   
+            if (status == AccountStatus.FROZEN || status == AccountStatus.CLOSED) {
+                ca.freezeAccount();
+            }
+
+            account = ca;
         }
+
+        return account;
     }
+
 
     @Override
     public List<Account> findAll() {

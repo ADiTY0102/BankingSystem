@@ -2,9 +2,11 @@ package com.bank.app;
 
 import java.util.Scanner;
 
+import com.bank.app.dto.AccountStatusChangeRequest;
 import com.bank.app.dto.CreateAccountRequest;
 import com.bank.app.dto.TransactionRequest;
 import com.bank.app.dto.TransferRequest;
+import com.bank.app.enums.AccountStatus;
 import com.bank.app.enums.AccountTypes;
 import com.bank.app.enums.TransactionType;
 import com.bank.app.model.Account;
@@ -151,4 +153,35 @@ public class MenuActions {
 				t.getFailureReason())
 				);
 	}
+	
+	//Admin Accessed Account Status Updater. 
+	public static void changeAccountStatus(Scanner scanner, BankService bankService) {
+
+	    System.out.print("Enter account number: ");
+	    String accNo = scanner.nextLine();
+
+	    System.out.println("Select new status:");
+	    System.out.println("1. ACTIVE");
+	    System.out.println("2. FROZEN");
+	    System.out.println("3. CLOSED");
+	    System.out.print("Choice: ");
+
+	    int choice = Integer.parseInt(scanner.nextLine());
+
+	    AccountStatus status;
+	    switch (choice) {
+	        case 1 -> status = AccountStatus.ACTIVE;
+	        case 2 -> status = AccountStatus.FROZEN;
+	        case 3 -> status = AccountStatus.CLOSED;
+	        default -> throw new IllegalArgumentException("Invalid status option");
+	    }
+
+	    AccountStatusChangeRequest request =
+	            new AccountStatusChangeRequest(accNo, status);
+
+	    bankService.changeAccountStatus(request);
+
+	    System.out.println("Account status updated successfully.");
+	}
+
 }

@@ -5,9 +5,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class GenerateId {
 	
-	private static final AtomicLong CUSTOMER_SEQ = new AtomicLong(1);
-	private static final AtomicLong ACCOUNT_SEQ = new AtomicLong(1);
-	private static final AtomicLong TRANSACTION_SEQ = new AtomicLong(1);
+	private static final AtomicLong CUSTOMER_SEQ = new AtomicLong(1000);
+	private static final AtomicLong ACCOUNT_SEQ = new AtomicLong(1000);
+	private static final AtomicLong TRANSACTION_SEQ = new AtomicLong(1000);
 	
 	private GenerateId() {
 		
@@ -15,14 +15,14 @@ public class GenerateId {
 	
 	
 	public static String generateCustomerId() {
-		return "C" + CUSTOMER_SEQ.getAndIncrement(); 
+		return "BANK00C" + CUSTOMER_SEQ.getAndIncrement(); 
 	}
 	
 	public static String generateAccountId() {
-		return "A" + ACCOUNT_SEQ.getAndIncrement();
+		return "BANK00A" + ACCOUNT_SEQ.getAndIncrement();
 	}
 	public static String generateTransactionId() {
-		return "T" + TRANSACTION_SEQ.getAndIncrement();
+		return "BANK00T" + TRANSACTION_SEQ.getAndIncrement();
 	}
 	
 	
